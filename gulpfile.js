@@ -239,7 +239,7 @@ function merge_json() {
             obj = _.defaultsDeep(obj, objs[i]);
         }
 
-        file.contents = new Buffer(JSON.stringify(obj));
+        file.contents = Buffer.from(JSON.stringify(obj));
         this.push(file);
         callback();
     });
