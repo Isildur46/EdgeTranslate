@@ -142,6 +142,8 @@ E-mails: [nickyc975](mailto:chenjinlong2016@outlook.com), [Mark Fenng](mailto:f1
 
 * [knlyknly](https://github.com/knlyknly)
 
+* [ykyuki](https://github.com/ykyuki)
+
 ## Help Localization
 
 If you want to help localize Edge Translate, please read the following guide.
