@@ -63,12 +63,6 @@ chrome.runtime.onInstalled.addListener(function(details) {
     });
 
     chrome.contextMenus.create({
-        id: "pronounce",
-        title: chrome.i18n.getMessage("Pronounce") + " '%s'",
-        contexts: ["selection"]
-    });
-
-    chrome.contextMenus.create({
         id: "shortcut",
         title: chrome.i18n.getMessage("ShortcutSetting"),
         contexts: ["browser_action"]
@@ -181,12 +175,6 @@ chrome.runtime.onStartup.addListener(function() {
     chrome.contextMenus.create({
         id: "translate",
         title: chrome.i18n.getMessage("Translate") + " '%s'",
-        contexts: ["selection"]
-    });
-
-    chrome.contextMenus.create({
-        id: "pronounce",
-        title: chrome.i18n.getMessage("Pronounce") + " '%s'",
         contexts: ["selection"]
     });
 
