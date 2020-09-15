@@ -265,20 +265,31 @@ class YoudaoTranslator {
      * @returns {Promise} then(result) used to return request result. catch(error) used to catch error
      */
     detect(text) {
-        // return axios({
-        //     url: "langdetect",
-        //     method: "post",
-        //     baseURL: this.HOST,
-        //     headers: this.HEADERS,
-        //     data: new URLSearchParams({
-        //         query: text
-        //     }),
-        //     timeout: 5000
-        // }).then(result => {
-        //     if (result.data.msg === "success")
-        //         return Promise.resolve(this.CODE_TO_LAN.get(result.data.lan));
-        //     else return Promise.reject(result.data);
-        // });
+        const tryTranslate = async function(text) {
+            return axios({
+                url: "/translate_o", // + "?" + "from=" + fromCode + "&to=" + toCode,
+                method: "post",
+                baseURL: this.HOST,
+                headers: this.HEADERS,
+                data: this.getQueryStr(text), // includes sign
+                timeout: 5000
+            }).then(result => {
+                //console.log("HTTP status:", result.status);
+                // console.log("HTTP statusText:", result.statusText);
+                // console.log("result.data\n", result.data);
+
+                if (result.data.errorCode === 0) {
+                    // success 
+                    const detectResult =  result.data.type; // "zh-CNS2en"
+                    let fromLang = detectResult.split("2")[0];
+                    fromLang = this.CODE_TO_LAN.get(fromLang);
+
+                    return fromLang;
+                } else return Promise.reject(result.data);
+            });
+        }.bind(this);
+
+        return tryTranslate(text);
     }
 
     /**

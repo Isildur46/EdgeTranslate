@@ -43,6 +43,28 @@ describe("youdao translator api", () => {
     //     done();
     // });
 
+    it("to detect language of English text", done => {
+        TRANSLATOR.detect("hello")
+            .then(result => {
+                expect(result).toEqual("en");
+                done();
+            })
+            .catch(error => {
+                done(error);
+            });
+    });
+
+    it("to detect language of Japanese text", done => {
+        TRANSLATOR.detect("こんにちは")
+            .then(result => {
+                expect(result).toEqual("ja");
+                done();
+            })
+            .catch(error => {
+                done(error);
+            });
+    });
+
     it("to auto detect & translate a piece of English text", done => {
         TRANSLATOR.translate("hello")
             .then(result => {
@@ -54,6 +76,7 @@ describe("youdao translator api", () => {
                 done(error);
             });
     });
+
     it("to auto detect & translate a piece of Chinese text", done => {
         TRANSLATOR.translate("你好")
             .then(result => {
@@ -65,6 +88,7 @@ describe("youdao translator api", () => {
                 done(error);
             });
     });
+
     it("to auto detect & translate a piece of Japanese text", done => {
         TRANSLATOR.translate("おはよう")
             .then(result => {
