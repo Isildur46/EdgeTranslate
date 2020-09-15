@@ -1,11 +1,5 @@
-import { LANGUAGES } from "./languages.js";
-import EVENT_MANAGER from "../lib/scripts/event.js";
-import {
-    translate,
-    showTranslate,
-    executeGoogleScript,
-    executeYouDaoScript
-} from "../lib/scripts/translate.js";
+import LANGUAGES from "../common/scripts/languages.js";
+import Messager from "../common/scripts/messager";
 
 // 获取下拉列表元素
 var sourceLanguage = document.getElementById("sl");
@@ -85,9 +79,9 @@ window.onload = function() {
         }
 
         // languages是可选的源语言和目标语言的列表
-        LANGUAGES.forEach(element => {
-            let value = element.value;
-            let name = chrome.i18n.getMessage(element.name);
+        for (let language in LANGUAGES) {
+            let value = language;
+            let name = chrome.i18n.getMessage(LANGUAGES[language]);
 
             if (languageSetting && value == languageSetting.sl) {
                 sourceLanguage.options.add(new Option(name, value, true, true));
@@ -100,7 +94,7 @@ window.onload = function() {
             } else {
                 targetLanguage.options.add(new Option(name, value));
             }
-        });
+        }
 
         showSourceTarget(); // show source language and target language in input placeholder
     });
@@ -135,7 +129,7 @@ chrome.commands.onCommand.addListener(function(command) {
  */
 function updateLanguageSetting(sourceLanguage, targetLanguage) {
     // Update translator config.
-    EVENT_MANAGER.triggerEvent(EVENT_MANAGER.EVENTS.LANGUAGE_SETTING_CHANGED, {
+    Messager.send("background", "language_setting_update", {
         from: sourceLanguage,
         to: targetLanguage
     });
@@ -171,8 +165,12 @@ function addEventListener() {
     document.getElementById("translateSubmit").addEventListener("click", translateSubmit);
     document.addEventListener("keypress", translatePreSubmit); // 对用户按下回车按键后的事件进行监听
     document.getElementById("setting-switch").addEventListener("click", settingSwitch);
-    document.getElementById("google-page-translate").addEventListener("click", executeGoogleScript);
-    document.getElementById("youdao-page-translate").addEventListener("click", executeYouDaoScript);
+    document.getElementById("google-page-translate").addEventListener("click", () => {
+        Messager.send("background", "translate_page_google");
+    });
+    document.getElementById("youdao-page-translate").addEventListener("click", () => {
+        Messager.send("background", "translate_page_youdao");
+    });
 }
 
 /**
@@ -188,14 +186,12 @@ function translateSubmit() {
     if (content.replace(/\s*/, "") !== "") {
         // 判断值是否为
         document.getElementById("hint_message").style.display = "none";
-        translate(content, function(result) {
-            chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-                showTranslate(result, tabs[0], function() {
-                    setTimeout(function() {
-                        window.close(); // 展示结束后关闭option页面
-                    }, 0);
-                });
-            });
+
+        // send message to background to translate content
+        Messager.send("background", "translate", { text: content }).then(() => {
+            setTimeout(() => {
+                window.close(); // 展示结束后关闭option页面
+            }, 0);
         });
     } // 提示输入的内容是
     else document.getElementById("hint_message").style.display = "inline";

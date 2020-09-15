@@ -2,6 +2,7 @@ const _ = require("lodash");
 const del = require("del");
 const gulp = require("gulp");
 const stylus = require("gulp-stylus");
+const fs = require("fs");
 const through = require("through2");
 const webpack = require("webpack");
 const webpack_stream = require("webpack-stream");
@@ -200,7 +201,7 @@ function html() {
 function styl() {
     let output_dir = "./build/" + browser + "/";
     return gulp
-        .src("./src/!(lib)/**/*.styl", { base: "src" })
+        .src("./src/!(common)/**/*.styl", { base: "src" })
         .pipe(
             stylus({
                 compress: true // 需要压缩
@@ -269,12 +270,13 @@ function packStatic() {
 function merge_json() {
     let objs = [];
     for (let i in arguments) {
-        objs.push(require(arguments[i]));
+        objs.push(JSON.parse(fs.readFileSync(arguments[i])));
     }
 
     let stream = through.obj(function(file, enc, callback) {
         let obj = JSON.parse(file.contents.toString(enc));
         for (let i in objs) {
+            // log(JSON.stringify(objs[i]));
             obj = _.defaultsDeep(obj, objs[i]);
         }
 
