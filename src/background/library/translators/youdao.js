@@ -6,6 +6,7 @@ import querystring from "querystring";
  * Supported languages
  */
 const LANGUAGES = [
+    ["AUTO", "AUTO"],
     ["zh-CN", "zh-CHS"],
     ["en", "en"],
     ["ja", "ja"],
@@ -265,13 +266,14 @@ class YoudaoTranslator {
      * @returns {Promise} then(result) used to return request result. catch(error) used to catch error
      */
     detect(text) {
-        const tryTranslate = async function(text) {
-            return axios({
+        const youdaoLang = this.LAN_TO_CODE.get(text);
+        const tryTranslate = async function(youdaoLang) {
+            return await axios({
                 url: "/translate_o", // + "?" + "from=" + fromCode + "&to=" + toCode,
                 method: "post",
                 baseURL: this.HOST,
                 headers: this.HEADERS,
-                data: this.getQueryStr(text), // includes sign
+                data: this.getQueryStr(youdaoLang), // includes sign
                 timeout: 5000
             }).then(result => {
                 //console.log("HTTP status:", result.status);
@@ -293,6 +295,19 @@ class YoudaoTranslator {
     }
 
     /**
+     * Detect source language and target language, check if they are both in range.
+     * Return true only when both two languages are in range.
+     *
+     * @param {String} from source language
+     * @param {String} to target language
+     * @returns {Boolean} rusult
+     */
+    canFullTranslate (form, to) {
+        const FullTranslateLang = ["AUTO", "zh-CN", "en", "fr", "ko", "ja"];
+        return FullTranslateLang.includes(form) && FullTranslateLang.includes("to");
+    }
+
+    /**
      * Translate given text.
      *
      * @param {String} text text to translate
@@ -301,24 +316,37 @@ class YoudaoTranslator {
      * @returns {Promise} then(result) used to return request result. catch(error) used to catch error
      */
     translate(text, from = "AUTO", to = "AUTO") {
+        from = this.detect(from);
+
+        if (this.canFullTranslate(from, to)) {
+            return this.doFullTranslate(text, from, to);
+        }
+        return this.doSimpleTranslate(text, from, to);
+    }
+
+    /**
+     * Translate given text simply, only returns main meaning.
+     *
+     * @param {String} text text to translate
+     * @param {String} from source language
+     * @param {String} to target language
+     * @returns {Promise} then(result) used to return request result. catch(error) used to catch error
+     */
+    doSimpleTranslate (text = "", from, to) {
         let reTryCount = 0;
         // send translation request one time
         // if the first request fails, resend requests no more than {this.MAX_RETRY} times
         let translateOneTime = async function() {
-            let detectedFrom = from;
-            if (detectedFrom === "auto") {
-                // detectedFrom = await this.detect(text);
-            }
 
             let toCode = this.LAN_TO_CODE.get(to),
-                fromCode = this.LAN_TO_CODE.get(detectedFrom);
+                fromCode = this.LAN_TO_CODE.get(from);
 
             return axios({
                 url: "/translate_o", // + "?" + "from=" + fromCode + "&to=" + toCode,
                 method: "post",
                 baseURL: this.HOST,
                 headers: this.HEADERS,
-                data: this.getQueryStr(text), // includes sign
+                data: this.getQueryStr(text, fromCode, toCode), // includes sign
                 timeout: 5000
             }).then(result => {
                 //console.log("HTTP status:", result.status);
@@ -337,6 +365,19 @@ class YoudaoTranslator {
 
         //
         return translateOneTime();
+    }
+
+    /**
+     * Translate given text, returns full content, including main meaning, 
+     * detailed meanings, phonetic symbol, pronounce, examples, etc.
+     *
+     * @param {String} text text to translate
+     * @param {String} from source language
+     * @param {String} to target language
+     * @returns {Promise} then(result) used to return request result. catch(error) used to catch error
+     */
+    doFullTranslate (text, from, to) {
+
     }
 
     /**
@@ -387,13 +428,13 @@ class YoudaoTranslator {
      * @param {String} to target language
      * @returns {String} uri encoded string
      */
-    getQueryStr(text = "", from = "AUTO", to = "AUTO") {
+    getQueryStr(text, from, to) {
         let sign = this.generateSign(text);
         // TODO support languages selecting
         let QSObj = {
             i: text,
-            from: "AUTO",
-            to: "AUTO",
+            from: from,
+            to: to,
             smartresult: "dict",
             client: "fanyideskweb",
             doctype: "json",
@@ -408,7 +449,7 @@ class YoudaoTranslator {
     }
 
     /**
-     * get Youdai sign object
+     * get Youdao sign object
      *
      * @param {String} text text to translate
      * @returns {Object} sign object
