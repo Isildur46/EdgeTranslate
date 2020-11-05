@@ -35,13 +35,13 @@ export default class resizable {
     resizeInitiate() {
         this.resizeEnd();
         // wrap a resize start event handler
-        this.resizeStartHandler = function(e) {
+        this.resizeStartHandler = e => {
             this.resizeStart(e);
-        }.bind(this);
+        };
         // wrap a resize(resizing) event handler
-        this.resizeHandler = function(e) {
+        this.resizeHandler = e => {
             this.resize(e);
-        }.bind(this);
+        };
 
         // parse the direction parameter given by users
         this.directions = resizable.parseDirection(this.options.directions);
@@ -150,6 +150,7 @@ export default class resizable {
             /* create resizable div elements and append to the container */
             let div = document.createElement("div");
             div.id = `resizable-${direction}`;
+            div.setAttribute("class", "resizable-div");
             div.style.cssText = cssObject.stringifyItems(divCss);
             this.store.divContainer.appendChild(div);
             // store the div resizable element

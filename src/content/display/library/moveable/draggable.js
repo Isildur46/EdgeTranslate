@@ -31,13 +31,13 @@ export default class draggable {
         this.dragEnd();
         this.setBounds(this.options.bounds);
         // wrap a drag start event handler
-        this.dragStartHandler = function(e) {
+        this.dragStartHandler = e => {
             this.dragStart(e);
-        }.bind(this);
+        };
         // wrap a drag(dragging) event handler
-        this.dragHandler = function(e) {
+        this.dragHandler = e => {
             this.drag(e);
-        }.bind(this);
+        };
         this.targetElement.addEventListener("mousedown", this.dragStartHandler);
     }
 
@@ -72,6 +72,7 @@ export default class draggable {
      * @param {event} e the mouse down event
      */
     dragStart(e) {
+        if (e.target.getAttribute("class") === "resizable-div") return;
         this.dragging = true;
         // store the start css translate value. [x,y]
         this.store.startTranslate = [];

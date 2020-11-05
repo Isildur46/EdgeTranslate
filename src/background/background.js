@@ -1,11 +1,5 @@
 import {
-    translate,
-    pronounce,
-    stopPronounce,
-    onLanguageSettingUpdated,
-    getAvailableTranslators,
-    updateTranslator,
-    showTranslate,
+    TRANSLATOR_MANAGER,
     translatePage,
     youdaoPageTranslate,
     executeYouDaoScript,
@@ -54,11 +48,9 @@ const DEFAULT_SETTINGS = {
         UseGoogleAnalytics: true,
         UsePDFjs: true
     },
+    DefaultTranslator: "GoogleTranslate",
     DefaultPageTranslator: "YouDaoPageTranslate",
-    TranslatorConfig: {
-        // The translator user selected in translating result frame.
-        single: "GoogleTranslate",
-
+    HybridTranslatorConfig: {
         // The translators used in current hybrid translate.
         translators: ["BaiduTranslate", "BingTranslate", "GoogleTranslate"],
 
@@ -76,71 +68,77 @@ const DEFAULT_SETTINGS = {
 };
 
 /**
+ * BEGIN SETTING UP CONTEXT MENUS
+ */
+chrome.contextMenus.create({
+    id: "translate",
+    title: chrome.i18n.getMessage("Translate") + " '%s'",
+    contexts: ["selection"]
+});
+
+chrome.contextMenus.create({
+    id: "shortcut",
+    title: chrome.i18n.getMessage("ShortcutSetting"),
+    contexts: ["browser_action"]
+});
+
+chrome.contextMenus.create({
+    id: "translate_page",
+    title: chrome.i18n.getMessage("TranslatePage"),
+    contexts: ["page"]
+});
+
+chrome.contextMenus.create({
+    id: "translate_page_youdao",
+    title: chrome.i18n.getMessage("TranslatePageYouDao"),
+    contexts: ["browser_action"]
+});
+
+chrome.contextMenus.create({
+    id: "translate_page_google",
+    title: chrome.i18n.getMessage("TranslatePageGoogle"),
+    contexts: ["browser_action"]
+});
+
+chrome.contextMenus.create({
+    id: "add_url_blacklist",
+    title: chrome.i18n.getMessage("AddUrlBlacklist"),
+    contexts: ["browser_action"],
+    enabled: false,
+    visible: false
+});
+
+chrome.contextMenus.create({
+    id: "add_domain_blacklist",
+    title: chrome.i18n.getMessage("AddDomainBlacklist"),
+    contexts: ["browser_action"],
+    enabled: false,
+    visible: false
+});
+
+chrome.contextMenus.create({
+    id: "remove_url_blacklist",
+    title: chrome.i18n.getMessage("RemoveUrlBlacklist"),
+    contexts: ["browser_action"],
+    enabled: false,
+    visible: false
+});
+
+chrome.contextMenus.create({
+    id: "remove_domain_blacklist",
+    title: chrome.i18n.getMessage("RemoveDomainBlacklist"),
+    contexts: ["browser_action"],
+    enabled: false,
+    visible: false
+});
+/**
+ * END SETTING UP CONTEXT MENUS
+ */
+
+/**
  * 初始化插件配置。
  */
 chrome.runtime.onInstalled.addListener(function(details) {
-    chrome.contextMenus.create({
-        id: "translate",
-        title: chrome.i18n.getMessage("Translate") + " '%s'",
-        contexts: ["selection"]
-    });
-
-    chrome.contextMenus.create({
-        id: "shortcut",
-        title: chrome.i18n.getMessage("ShortcutSetting"),
-        contexts: ["browser_action"]
-    });
-
-    chrome.contextMenus.create({
-        id: "translate_page",
-        title: chrome.i18n.getMessage("TranslatePage"),
-        contexts: ["page"]
-    });
-
-    chrome.contextMenus.create({
-        id: "translate_page_youdao",
-        title: chrome.i18n.getMessage("TranslatePageYouDao"),
-        contexts: ["browser_action"]
-    });
-
-    chrome.contextMenus.create({
-        id: "translate_page_google",
-        title: chrome.i18n.getMessage("TranslatePageGoogle"),
-        contexts: ["browser_action"]
-    });
-
-    chrome.contextMenus.create({
-        id: "add_url_blacklist",
-        title: chrome.i18n.getMessage("AddUrlBlacklist"),
-        contexts: ["browser_action"],
-        enabled: false,
-        visible: false
-    });
-
-    chrome.contextMenus.create({
-        id: "add_domain_blacklist",
-        title: chrome.i18n.getMessage("AddDomainBlacklist"),
-        contexts: ["browser_action"],
-        enabled: false,
-        visible: false
-    });
-
-    chrome.contextMenus.create({
-        id: "remove_url_blacklist",
-        title: chrome.i18n.getMessage("RemoveUrlBlacklist"),
-        contexts: ["browser_action"],
-        enabled: false,
-        visible: false
-    });
-
-    chrome.contextMenus.create({
-        id: "remove_domain_blacklist",
-        title: chrome.i18n.getMessage("RemoveDomainBlacklist"),
-        contexts: ["browser_action"],
-        enabled: false,
-        visible: false
-    });
-
     // assign default value to settings of this extension
     chrome.storage.sync.get(function(result) {
         var buffer = result; // use var buffer as a pointer
@@ -226,78 +224,6 @@ chrome.notifications.onClicked.addListener(function(notificationId) {
 });
 
 /**
- * 根据用户的语言设定国际化右键菜单中的 “翻译 'xxx'” 选项
- */
-chrome.runtime.onStartup.addListener(function() {
-    // 不知为何找不到这些menu item，导致 update 不能用。
-    // chrome.contextMenus.update("translate", {"title": chrome.i18n.getMessage("Translate") + " '%s'"});
-    // chrome.contextMenus.update("shortcut", {"title": chrome.i18n.getMessage("ShortcutSetting")});
-
-    chrome.contextMenus.removeAll();
-    chrome.contextMenus.create({
-        id: "translate",
-        title: chrome.i18n.getMessage("Translate") + " '%s'",
-        contexts: ["selection"]
-    });
-
-    chrome.contextMenus.create({
-        id: "shortcut",
-        title: chrome.i18n.getMessage("ShortcutSetting"),
-        contexts: ["browser_action"]
-    });
-
-    chrome.contextMenus.create({
-        id: "translate_page",
-        title: chrome.i18n.getMessage("TranslatePage"),
-        contexts: ["page"]
-    });
-
-    chrome.contextMenus.create({
-        id: "translate_page_youdao",
-        title: chrome.i18n.getMessage("TranslatePageYouDao"),
-        contexts: ["browser_action"]
-    });
-
-    chrome.contextMenus.create({
-        id: "translate_page_google",
-        title: chrome.i18n.getMessage("TranslatePageGoogle"),
-        contexts: ["browser_action"]
-    });
-
-    chrome.contextMenus.create({
-        id: "add_url_blacklist",
-        title: chrome.i18n.getMessage("AddUrlBlacklist"),
-        contexts: ["browser_action"],
-        enabled: false,
-        visible: false
-    });
-
-    chrome.contextMenus.create({
-        id: "add_domain_blacklist",
-        title: chrome.i18n.getMessage("AddDomainBlacklist"),
-        contexts: ["browser_action"],
-        enabled: false,
-        visible: false
-    });
-
-    chrome.contextMenus.create({
-        id: "remove_url_blacklist",
-        title: chrome.i18n.getMessage("RemoveUrlBlacklist"),
-        contexts: ["browser_action"],
-        enabled: false,
-        visible: false
-    });
-
-    chrome.contextMenus.create({
-        id: "remove_domain_blacklist",
-        title: chrome.i18n.getMessage("RemoveDomainBlacklist"),
-        contexts: ["browser_action"],
-        enabled: false,
-        visible: false
-    });
-});
-
-/**
  * 添加点击菜单后的处理事件
  */
 chrome.contextMenus.onClicked.addListener(function(info, tab) {
@@ -305,22 +231,18 @@ chrome.contextMenus.onClicked.addListener(function(info, tab) {
         case "translate":
             sendMessageToCurrentTab("get_selection", {})
                 .then(({ selectedText, position }) => {
-                    let text = selectedText;
-                    // If content scripts can not access the selection, use info.selectionText instead.
-                    if (!text && info.selectionText.trim()) {
-                        text = info.selectionText;
+                    if (selectedText) {
+                        return TRANSLATOR_MANAGER.translate(selectedText, position, tab);
                     }
-                    translate(text, position).then(result => showTranslate(result, tab));
+                    return Promise.reject();
                 })
-                .catch(() => {});
-            break;
-        case "pronounce":
-            pronounce(info.selectionText, "auto", selectedTTSSpeed);
-            if (selectedTTSSpeed === "fast") {
-                selectedTTSSpeed = "slow";
-            } else {
-                selectedTTSSpeed = "fast";
-            }
+                .catch(error => {
+                    // If content scripts can not access the tab the selection, use info.selectionText instead.
+                    if (info.selectionText.trim()) {
+                        return TRANSLATOR_MANAGER.translate(info.selectionText, null, tab);
+                    }
+                    return Promise.resolve(error);
+                });
             break;
         case "translate_page":
             translatePage();
@@ -386,10 +308,8 @@ async function messageHandler(message, sender) {
         case "redirect":
             chrome.tabs.update(sender.tab.id, { url: message.detail.url });
             return Promise.resolve();
-        case "translate": {
-            let result = await translate(message.detail.text, message.detail.position);
-            return await showTranslate(result, sender.tab);
-        }
+        case "translate":
+            return TRANSLATOR_MANAGER.translate(message.detail.text, message.detail.position);
         case "pronounce": {
             let speed = message.detail.speed;
             if (!speed) {
@@ -401,7 +321,11 @@ async function messageHandler(message, sender) {
                 }
             }
 
-            let result = await pronounce(message.detail.text, message.detail.language, speed);
+            let result = await TRANSLATOR_MANAGER.pronounce(
+                message.detail.text,
+                message.detail.language,
+                speed
+            );
             return result;
         }
         case "youdao_page_translate":
@@ -415,14 +339,17 @@ async function messageHandler(message, sender) {
         case "get_lang":
             return Promise.resolve({ lang: chrome.i18n.getUILanguage() });
         case "frame_closed":
-            stopPronounce();
+            TRANSLATOR_MANAGER.stopPronounce();
             return Promise.resolve();
         case "language_setting_update":
-            return onLanguageSettingUpdated(message.detail);
+            return TRANSLATOR_MANAGER.onLanguageSettingUpdated(message.detail);
         case "get_available_translators":
-            return getAvailableTranslators(message.detail);
-        case "update_translator":
-            return updateTranslator(message.detail);
+            return TRANSLATOR_MANAGER.getAvailableTranslators(message.detail);
+        case "update_default_translator":
+            return TRANSLATOR_MANAGER.updateDefaultTranslator(message.detail.translator);
+        case "open_options_page":
+            chrome.runtime.openOptionsPage();
+            return Promise.resolve();
         default:
             log("Unknown message title: " + message.title);
             return Promise.reject();

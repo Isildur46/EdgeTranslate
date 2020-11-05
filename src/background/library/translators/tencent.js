@@ -1,4 +1,5 @@
-import axios from "axios";
+import axios from "../axios.js";
+import { log } from "../../../common/scripts/common.js";
 
 /**
  * Supported languages.
@@ -75,48 +76,96 @@ class TencentTranslator {
     }
 
     /**
+     * Request Tencent translate home page in a new tab to update cookies.
+     *
+     * @returns {Promise<void>} request finished
+     */
+    async requestHomePage() {
+        /**
+         * Create a tab to start requesting https://fanyi.qq.com
+         */
+        let tabId = await new Promise((resolve, reject) =>
+            chrome.tabs.create({ url: this.BASE_URL, active: false }, tab => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError.message);
+                    return;
+                }
+
+                resolve(tab.id);
+            })
+        );
+
+        /**
+         * Check if the tab has been loaded.
+         */
+        return new Promise((resolve, reject) => {
+            let tabUpdateListener = (id, change, tab) => {
+                if (id !== tabId || tab.status === "loading") {
+                    return;
+                }
+
+                // Finished loading, remove the tab.
+                chrome.tabs.remove(tabId, () => {
+                    if (chrome.runtime.lastError) {
+                        log(chrome.runtime.lastError.message);
+                    }
+
+                    // Remove added listener.
+                    chrome.tabs.onUpdated.removeListener(tabUpdateListener);
+
+                    // It has been loaded, call resolve.
+                    if (tab.status === "complete") resolve();
+                    // It can not be loaded, call reject.
+                    else reject();
+                });
+            };
+
+            // Add listener.
+            chrome.tabs.onUpdated.addListener(tabUpdateListener);
+        });
+    }
+
+    /**
      * Update request tokens.
      *
      * @returns {Promise<void>} request Promise.
      */
     async updateTokens() {
-        if (this.qtk === "" || this.qtv === "") {
-            const response = await axios({
-                method: "GET",
-                baseURL: this.BASE_URL,
-                headers: this.HEADERS
-            });
+        // Update cookies first.
+        await this.requestHomePage();
 
-            this.qtv = response.data.match(/qtv\s*=\s*"([a-zA-Z0-9]+)";/)[1];
-            this.qtk = response.data.match(/qtk\s*=\s*"([^\s]+)";/)[1];
-        } else {
-            const response = await axios({
-                method: "POST",
-                baseURL: this.BASE_URL,
-                url: "/api/reAuth",
-                headers: this.HEADERS,
-                data: new URLSearchParams({
-                    qtv: this.qtv,
-                    qtk: this.qtk
-                })
+        // Get qtk and qrv from cookies.
+        return new Promise(resolve => {
+            chrome.cookies.getAll({ url: this.BASE_URL }, cookies => {
+                for (let cookie of cookies) {
+                    if (cookie.name === "qtv") {
+                        this.qtv = cookie.value;
+                    } else if (cookie.name === "qtk") {
+                        this.qtk = cookie.value;
+                    }
+                }
+                resolve();
             });
-
-            this.qtv = response.data.qtv;
-            this.qtk = response.data.qtk;
-        }
+        });
     }
 
     /**
      * Parse Google translate result.
      *
      * @param {Object} response Google translate response
+     * @param {String} originalText original text
      *
      * @returns {Object} parsed result
      */
-    parseResult(response) {
+    parseResult(response, originalText) {
         let result = {};
         result.originalText = response.translate.records[0].sourceText;
         result.mainMeaning = response.translate.records[0].targetText.split(/\s*\/\s*/g)[0];
+
+        // In case the original text is not returned by the API.
+        if (!result.originalText || result.originalText.length <= 0) {
+            result.originalText = originalText;
+        }
 
         if (response.suggest && response.suggest.data && response.suggest.data.length > 0) {
             if (response.suggest.data[0].prx_ph_AmE) {
@@ -148,29 +197,21 @@ class TencentTranslator {
      *
      * @returns {Promise<String>} detected language Promise
      */
-    detect(text) {
-        return new Promise((resolve, reject) => {
-            axios({
-                method: "POST",
-                baseURL: this.BASE_URL,
-                url: "/api/translate",
-                headers: this.HEADERS,
-                data: new URLSearchParams({
-                    source: this.LAN_TO_CODE.get("auto"),
-                    target: this.LAN_TO_CODE.get("zh-CN"),
-                    sourceText: text
-                })
+    async detect(text) {
+        const response = await axios({
+            method: "POST",
+            baseURL: this.BASE_URL,
+            url: "/api/translate",
+            headers: this.HEADERS,
+            data: new URLSearchParams({
+                source: this.LAN_TO_CODE.get("auto"),
+                target: this.LAN_TO_CODE.get("zh-CN"),
+                sourceText: text
             })
-                .then(response => {
-                    if (response.status === 200) {
-                        let result = response.data.translate.source;
-                        resolve(this.CODE_TO_LAN.get(result));
-                    } else reject(response);
-                })
-                .catch(error => {
-                    reject(error);
-                });
         });
+
+        let result = response.data.translate.source;
+        return this.CODE_TO_LAN.get(result);
     }
 
     /**
@@ -184,39 +225,40 @@ class TencentTranslator {
      */
     translate(text, from, to) {
         let retryCount = 0;
-        let translateOnce = () => {
-            return new Promise((resolve, reject) => {
-                axios({
-                    method: "POST",
-                    baseURL: this.BASE_URL,
-                    url: "/api/translate",
-                    headers: this.HEADERS,
-                    data: new URLSearchParams({
-                        source: this.LAN_TO_CODE.get(from),
-                        target: this.LAN_TO_CODE.get(to),
-                        sourceText: text,
-                        qtv: this.qtv,
-                        qtk: this.qtk,
-                        sessionUuid: "translate_uuid" + new Date().getTime()
-                    })
+        let translateOnce = async () => {
+            const response = await axios({
+                method: "POST",
+                baseURL: this.BASE_URL,
+                url: "/api/translate",
+                headers: this.HEADERS,
+                data: new URLSearchParams({
+                    source: this.LAN_TO_CODE.get(from),
+                    target: this.LAN_TO_CODE.get(to),
+                    sourceText: text,
+                    qtv: this.qtv,
+                    qtk: this.qtk,
+                    sessionUuid: "translate_uuid" + new Date().getTime()
                 })
-                    .then(response => {
-                        if (
-                            response.status === 200 &&
-                            (response.data.dict ||
-                                (response.data.translate && retryCount >= this.MAX_RETRY))
-                        ) {
-                            let result = this.parseResult(response.data);
-                            resolve(result);
-                        } else if (retryCount < this.MAX_RETRY) {
-                            retryCount++;
-                            resolve(this.updateTokens().then(translateOnce));
-                        } else reject(response);
-                    })
-                    .catch(error => {
-                        reject(error);
-                    });
             });
+
+            // Translate succeeded.
+            if (response.data.dict || (response.data.translate && retryCount >= this.MAX_RETRY)) {
+                let result = this.parseResult(response.data, text);
+                return result;
+            }
+
+            // Retry.
+            if (retryCount < this.MAX_RETRY) {
+                retryCount++;
+                return this.updateTokens().then(translateOnce);
+            }
+
+            throw {
+                errorType: "API_ERR",
+                errorCode: response.status,
+                errorMsg: "Translate failed, please contact developers to report problem.",
+                errorObj: response
+            };
         };
 
         return translateOnce();
@@ -236,28 +278,44 @@ class TencentTranslator {
         // Pause audio in case that it's playing.
         this.stopPronounce();
 
-        return new Promise((resolve, reject) => {
-            /**
-             * Get guid from cookies firstly.
-             */
-            chrome.cookies.get({ url: this.BASE_URL, name: "fy_guid" }, cookie => {
-                if (!cookie || !cookie.value) {
-                    reject("Tencent guid not found!");
-                    return;
+        let retryCount = 0;
+        let pronounceOnce = async () => {
+            try {
+                // Get Tencent guid.
+                let guid = await new Promise((resolve, reject) => {
+                    chrome.cookies.get({ url: this.BASE_URL, name: "fy_guid" }, cookie => {
+                        if (!cookie || !cookie.value) {
+                            reject("Tencent guid not found!");
+                            return;
+                        }
+                        resolve(cookie.value);
+                    });
+                });
+
+                // Construct src url.
+                this.AUDIO.src = `${
+                    this.BASE_URL
+                }/api/tts?platform=PC_Website&lang=${this.LAN_TO_CODE.get(
+                    language
+                )}&text=${encodeURIComponent(text)}&guid=${guid}`;
+
+                return await this.AUDIO.play();
+            } catch (error) {
+                // Update cookies on failure.
+                if (retryCount < this.MAX_RETRY) {
+                    retryCount++;
+                    return this.requestHomePage().then(pronounceOnce);
                 }
 
-                this.AUDIO.src =
-                    this.BASE_URL +
-                    "/api/tts?platform=PC_Website&lang=" +
-                    this.LAN_TO_CODE.get(language) +
-                    "&text=" +
-                    encodeURIComponent(text) +
-                    "&guid=" +
-                    cookie.value;
-
-                resolve(this.AUDIO.play());
-            });
-        });
+                throw {
+                    errorType: "API_ERR",
+                    errorCode: 0,
+                    errorMsg: "Pronounce failed, please contact developers to report problem.",
+                    errorObj: error
+                };
+            }
+        };
+        return pronounceOnce();
     }
 
     /**

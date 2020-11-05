@@ -19,6 +19,10 @@
         "message": "Fix the result frame",
         "description": "Fix the translating result frame."
     },
+    "UnfixResultFrame": {
+        "message": "Unfix the result frame",
+        "description": "Unfix the translating result frame."
+    },
     "CloseResultFrame": {
         "message": "Close the result frame",
         "description": "Close the translating result frame."
@@ -82,6 +86,14 @@
     "PronounceTranslated": {
         "message": "Read translated text",
         "description": "Read translated text."
+    },
+    "EditText": {
+        "message": "Edit text",
+        "description": "Edit selected text."
+    },
+    "Retranslate": {
+        "message": "Re-translate",
+        "description": "Re-translate the edited text."
     },
     "CopyResult": {
         "message": "Copy result",
@@ -255,8 +267,8 @@
         "message": "Unfold language settings",
         "description": "Unfold language setting options"
     },
-    "TranslatorConfig": {
-        "message": "Translator Config",
+    "HybridTranslatorConfig": {
+        "message": "Hybrid Translator Config",
         "description": "Config providers for each part of the translation."
     },
     "MainTranslator": {
@@ -299,17 +311,17 @@
         "message": "Network error! Please check your network connection.",
         "description": "Network error message."
     },
-    "NETERR_CODE": {
+    "APIERR": {
+        "message": "Request parameters error. Please try using other translators or wait a moment and retry. If translating is still broken, please contact developers.",
+        "description": "API parameters error."
+    },
+    "ERR_CODE": {
         "message": "Error code",
-        "description": "Network error code."
+        "description": "Error code."
     },
-    "NETERR_503": {
-        "message": "Request too frequently! Google has blocked your IP address temporarily. Please try again in 30 minutes.",
-        "description": "Network error message for error code 503."
-    },
-    "NETERR_413": {
-        "message": "Translating text too long! Please shorten your translating text and try again.",
-        "description": "Network error message for error code 413."
+    "ERR_MSG": {
+        "message": "Error message",
+        "description": "Error message."
     },
     "English": {
         "message": "English",
@@ -1090,6 +1102,10 @@
     "Twi": {
         "message": "Twi",
         "description": "Twi"
+    },
+    "Uyghur": {
+        "message": "Uyghur",
+        "description": "Uyghur"
     },
     "Ukrainian": {
         "message": "Ukrainian",

@@ -19,6 +19,10 @@
         "message": "固定翻譯結果展示框",
         "description": "固定翻譯結果展示框"
     },
+    "UnfixResultFrame": {
+        "message": "取消固定翻譯結果展示框",
+        "description": "取消固定翻譯結果展示框"
+    },
     "CloseResultFrame": {
         "message": "關閉翻譯結果展示框",
         "description": "關閉翻譯結果展示框"
@@ -82,6 +86,14 @@
     "PronounceTranslated": {
         "message": "朗讀翻譯結果",
         "description": "朗讀翻譯結果"
+    },
+    "EditText": {
+        "message": "編輯文本",
+        "description": "編輯選中的文本。"
+    },
+    "Retranslate": {
+        "message": "重新翻譯",
+        "description": "重新翻譯編輯後的文本。"
     },
     "CopyResult": {
         "message": "複製結果",
@@ -255,8 +267,8 @@
         "message": "展開語言設置",
         "description": "將語言設置選項展開"
     },
-    "TranslatorConfig": {
-        "message": "翻譯源設置",
+    "HybridTranslatorConfig": {
+        "message": "混合翻譯源設置",
         "description": "設置翻譯結果各個部分使用的翻譯源。"
     },
     "MainTranslator": {
@@ -299,17 +311,17 @@
         "message": "網絡錯誤！請檢查您的網絡連接。",
         "description": "網絡錯誤信息。"
     },
-    "NETERR_CODE": {
+    "APIERR": {
+        "message": "请求参数错误，请更换其他翻译源或过段时间再翻译，如还是无法使用，请联系开发者。",
+        "description": "接口参数配置错误。"
+    },
+    "ERR_CODE": {
         "message": "錯誤代碼",
-        "description": "網絡錯誤代碼。"
+        "description": "錯誤代碼。"
     },
-    "NETERR_503": {
-        "message": "由於您的請求過於頻繁，Google已將您的IP暫時封鎖，請等待半小時后重試！",
-        "description": "503狀態碼錯誤信息。"
-    },
-    "NETERR_413": {
-        "message": "您請求的的翻譯文本太長，請分段翻譯！",
-        "description": "413狀態碼錯誤信息。"
+    "ERR_MSG": {
+        "message": "錯誤信息",
+        "description": "錯誤信息。"
     },
     "English": {
         "message": "英語",
@@ -1090,6 +1102,10 @@
     "Twi": {
         "message": "契維語",
         "description": "契維語"
+    },
+    "Uyghur": {
+        "message": "維吾爾語",
+        "description": "維吾爾語"
     },
     "Ukrainian": {
         "message": "烏克蘭語",

@@ -64,9 +64,6 @@ const transitionDuration = 500;
 var resizeFlag = false;
 // store original css text on document.body
 var documentBodyCSS;
-window.onload = () => {
-    documentBodyCSS = document.body.style.cssText;
-};
 
 /**
  * initiate panel elements to display translation result
@@ -83,7 +80,7 @@ window.onload = () => {
     // the first child element of shadow dom. It contains all of the panel content elements
     resultPanel = shadowDom.firstChild;
     // store the panel body element
-    bodyPanel = shadowDom.getElementById("panel-body");
+    bodyPanel = shadowDom.getElementById("edge-translate-panel-body");
 
     /* set attributes of elements */
     resultPanel.style.backgroundColor = "white"; // set style dynamically to be compatible with chrome extension "Dark Reader"
@@ -100,14 +97,13 @@ window.onload = () => {
     /* initiate setting value */
     getDisplaySetting();
     // Set up translator options.
-    chrome.storage.sync.get(["languageSetting", "TranslatorConfig"], async result => {
-        let config = result.TranslatorConfig;
+    chrome.storage.sync.get(["languageSetting", "DefaultTranslator"], async result => {
         let languageSetting = result.languageSetting;
         let availableTranslators = await Messager.send("background", "get_available_translators", {
             from: languageSetting.sl,
             to: languageSetting.tl
         });
-        setUpTranslateConfig(config, availableTranslators);
+        setUpTranslateConfig(result.DefaultTranslator, availableTranslators);
     });
 
     /* make the resultPanel resizable and draggable */
@@ -117,7 +113,7 @@ window.onload = () => {
         /* set threshold value to increase the resize area */
         // threshold: { s: 5, se: 5, e: 5, ne: 5, n: 5, nw: 5, w: 5, sw: 5 },
         // threshold: { edge:5, corner:5 },
-        threshold: 10,
+        threshold: 5,
         /**
          * set thresholdPosition to decide where the resizable area is
          * "in": the activated resizable area is within the target element
@@ -128,10 +124,14 @@ window.onload = () => {
         // thresholdPosition: "in",
         // thresholdPosition: "center",
         // thresholdPosition: "out",
-        thresholdPosition: 0.9
+        thresholdPosition: 0.7
     });
 
     let startTranslate = [0, 0];
+    // to flag whether the floating panel should be changed to fixed panel
+    let floatingToFixed = false;
+    // store the fixed direction on bound event
+    let fixedDirection = "";
     /* draggable events*/
     moveablePanel
         .on("dragStart", ({ set, stop, inputEvent }) => {
@@ -139,29 +139,17 @@ window.onload = () => {
                 const path =
                     inputEvent.path || (inputEvent.composedPath && inputEvent.composedPath());
                 // if drag element isn't the head element, stop the drag event
-                if (!path || !shadowDom.getElementById("panel-head").isSameNode(path[0])) {
+                if (
+                    !path ||
+                    !shadowDom.getElementById("edge-translate-panel-head").isSameNode(path[0])
+                ) {
                     stop();
                     return;
                 }
             }
             set(startTranslate);
         })
-        .on("drag", ({ target, translate, inputEvent }) => {
-            if (inputEvent) {
-                // change the display type from fixed to floating
-                if (displaySetting.type === "fixed") {
-                    displaySetting.type = "floating";
-                    removeFixedPanel();
-                    showFloatingPanel();
-                    updateDisplaySetting();
-                }
-                /* whether to show hight part on the one side of the page*/
-                let threshold = 10;
-                if (inputEvent.clientX <= threshold) showHighlightPart("left");
-                else if (inputEvent.clientX >= window.innerWidth - threshold)
-                    showHighlightPart("right");
-                else removeHighlightPart();
-            }
+        .on("drag", ({ target, translate }) => {
             startTranslate = translate;
             target.style.transform = `translate(${translate[0]}px, ${translate[1]}px)`;
         })
@@ -170,35 +158,48 @@ window.onload = () => {
 
             /* change the display type of result panel */
             if (inputEvent && displaySetting.type === "floating") {
+                if (floatingToFixed) {
+                    displaySetting.fixedData.position = fixedDirection;
+                    displaySetting.type = "fixed";
+                    removeHighlightPart();
+                    showFixedPanel();
+                    updateDisplaySetting();
+                }
+            }
+        })
+        // // the result panel start to drag out of the drag area
+        // .on("boundStart", ({ direction }) => {
+        //     console.log(direction);
+        // })
+        // the result panel drag out of the drag area
+        .on("bound", ({ direction, distance }) => {
+            /* whether to show hight part on the one side of the page*/
+            if (displaySetting.type === "floating") {
                 let threshold = 10;
-                // mouse is close to the left boundary
-                if (inputEvent.clientX <= threshold) displaySetting.fixedData.position = "left";
-                // mouse is close to the right boundary
-                else if (inputEvent.clientX >= window.innerWidth - threshold)
-                    displaySetting.fixedData.position = "right";
-                else return;
-                displaySetting.type = "fixed";
-                removeHighlightPart();
-                showFixedPanel();
+                if (distance > threshold) {
+                    if (direction === "left" || direction === "right") {
+                        fixedDirection = direction;
+                        floatingToFixed = true;
+                        showHighlightPart(direction);
+                    }
+                }
+            }
+        })
+        // the result panel drag into drag area first time
+        .on("boundEnd", () => {
+            if (floatingToFixed) removeHighlightPart();
+            floatingToFixed = false;
+            // change the display type from fixed to floating
+            if (displaySetting.type === "fixed") {
+                displaySetting.type = "floating";
+                removeFixedPanel();
+                showFloatingPanel();
                 updateDisplaySetting();
             }
         });
-    // // the result panel start to drag out of the drag area
-    // .on("boundStart", ({ direction }) => {
-    //     console.log("boundStart" + direction);
-    // })
-    // // the result panel drag out of the drag area
-    // .on("bound", ({ direction, distance }) => {
-    //     console.log("bound", direction, distance);
-    // })
-    // // the result panel drag into drag area first time
-    // .on("boundEnd", () => {
-    //     console.log("boundEnd");
-    // });
     /* resizable  events*/
     moveablePanel
         .on("resizeStart", ({ set }) => {
-            getDisplaySetting();
             set(startTranslate);
         })
         .on("resize", ({ target, width, height, translate, inputEvent }) => {
@@ -260,7 +261,9 @@ async function showPanel(content, template) {
                 }
                 // the result panel would exceeds the bottom boundary of the page
                 if (position[1] + height > window.innerHeight + threshold) {
-                    position[1] = position[1] - height - YBias + threshold;
+                    // make true the panel wouldn't exceed the top boundary
+                    let newPosition1 = position[1] - height - YBias + threshold;
+                    position[1] = newPosition1 < 0 ? 0 : newPosition1;
                 }
                 position = [position[0] + XBias, position[1] + YBias];
             } else
@@ -284,11 +287,27 @@ async function showPanel(content, template) {
  * @param {Object} sender 返送消息者的具体信息 如果sender是content module，会有tab属性，如果是background，则没有tab属性
  */
 Messager.receive("content", message => {
-    // Check message timestamp.
+    /**
+     * Check message timestamp.
+     *
+     * translateResult keeps the latest(biggest) timestamp ever received.
+     */
     if (translateResult.timestamp && message.detail.timestamp) {
+        /**
+         * When a new message with timestamp arrived, we check if the timestamp stored in translateResult
+         * is bigger than the timestamp of the arriving message.
+         */
         if (translateResult.timestamp > message.detail.timestamp) {
+            /**
+             * If it does, which means the corresponding translating request is out of date, we drop the
+             * message.
+             */
             return Promise.resolve();
         } else {
+            /**
+             * If it doesn't, which means the corresponding translating request is up to date, we update
+             * the timestamp stored in translateResult and accept the message.
+             */
             translateResult.timestamp = message.detail.timestamp;
         }
     }
@@ -317,8 +336,11 @@ Messager.receive("content", message => {
                     break;
             }
             break;
-        case "update_translator_config_options":
-            setUpTranslateConfig(message.detail.config, message.detail.availableTranslators);
+        case "update_translator_options":
+            setUpTranslateConfig(
+                message.detail.selectedTranslator,
+                message.detail.availableTranslators
+            );
             break;
         // 发送的是快捷键命令
         case "command":
@@ -361,8 +383,8 @@ Messager.receive("content", message => {
  */
 function showFloatingPanel() {
     /* set border radius for the floating type result panel */
-    shadowDom.getElementById("panel-head").style["border-radius"] = "6px 6px 0 0";
-    shadowDom.getElementById("panel-body").style["border-radius"] = "0 0 6px 6px";
+    shadowDom.getElementById("edge-translate-panel-head").style["border-radius"] = "6px 6px 0 0";
+    shadowDom.getElementById("edge-translate-panel-body").style["border-radius"] = "0 0 6px 6px";
     moveablePanel.request("resizable", {
         width: displaySetting.floatingData.width * window.innerWidth,
         height: displaySetting.floatingData.height * window.innerHeight
@@ -382,6 +404,9 @@ function showFixedPanel() {
         resizeFlag = result.LayoutSettings.Resize;
         // user set to resize the document body
         if (resizeFlag) {
+            // store the original css text. when fixed panel is removed, restore the style of document.body
+            documentBodyCSS = document.body.style.cssText;
+
             document.body.style.position = "absolute";
             document.body.style.transition = `width ${transitionDuration}ms`;
             resultPanel.style.transition = `width ${transitionDuration}ms`;
@@ -413,8 +438,8 @@ function showFixedPanel() {
     });
 
     /* cancel the border radius of the fixed type result panel */
-    shadowDom.getElementById("panel-head").style["border-radius"] = "";
-    shadowDom.getElementById("panel-body").style["border-radius"] = "";
+    shadowDom.getElementById("edge-translate-panel-head").style["border-radius"] = "";
+    shadowDom.getElementById("edge-translate-panel-body").style["border-radius"] = "";
 }
 
 /**
@@ -446,7 +471,7 @@ function showHighlightPart(position) {
         // the element is not existed, create one
         else {
             highlightPart = document.createElement("div");
-            highlightPart.id = "panel-highlight";
+            highlightPart.id = "edge-translate-panel-highlight";
             shadowDom.appendChild(highlightPart);
             showHighlightPart(position);
         }
@@ -516,9 +541,12 @@ function getScrollbarWidth() {
  */
 async function updateBounds() {
     await getDisplaySetting();
+    let scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft;
     let scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
     moveablePanel.setBounds({
+        left: scrollLeft,
         top: scrollTop,
+        right: scrollLeft + window.innerWidth - (hasScrollbar() ? scrollbarWidth : 0),
         bottom: scrollTop + (1 + displaySetting.floatingData.height) * window.innerHeight - 64
     });
 }
@@ -567,6 +595,10 @@ function addHeadEventListener() {
     // 给固定侧边栏的按钮添加点击事件监听，用户侧边栏的固定与取消固定
     shadowDom.getElementById("icon-tuding-fix").addEventListener("click", fixOn);
     shadowDom.getElementById("icon-tuding-full").addEventListener("click", fixOff);
+    // Open options page.
+    shadowDom
+        .getElementById("icon-edge-translate-options")
+        .addEventListener("click", openOptionsPage);
     // 给点击侧边栏之外区域事件添加监听，点击侧边栏之外的部分就会让侧边栏关闭
     chrome.storage.sync.get("fixSetting", function(result) {
         if (!result.fixSetting) {
@@ -586,6 +618,8 @@ function addBodyEventListener(template) {
         case "result": {
             // copy the translation result to the copy board
             shadowDom.getElementById("icon-copy").addEventListener("click", copyContent);
+
+            // Pronounce texts.
             let sourcePronounceIcon = shadowDom.getElementById("source-pronounce");
             if (sourcePronounceIcon) {
                 sourcePronounceIcon.addEventListener("click", sourcePronounce);
@@ -595,6 +629,16 @@ function addBodyEventListener(template) {
             if (targetPronounceIcon) {
                 targetPronounceIcon.addEventListener("click", targetPronounce);
             }
+
+            // Edit and re-translate the text.
+            let editIcon = shadowDom.getElementById("icon-edit");
+            editIcon.addEventListener("click", editOriginalText);
+            editIcon.style.display = "block";
+
+            let editDoneIcon = shadowDom.getElementById("icon-edit-done");
+            editDoneIcon.addEventListener("click", submitEditedText);
+            editDoneIcon.style.display = "none";
+
             // 根据用户设定决定是否采用从右到左布局（用于阿拉伯语等从右到左书写的语言）
             chrome.storage.sync.get("LayoutSettings", result => {
                 if (result.LayoutSettings.RTL) {
@@ -658,7 +702,7 @@ function fixOn() {
     chrome.storage.sync.set({
         fixSetting: true
     });
-    shadowDom.getElementById("icon-tuding-full").style.display = "inline";
+    shadowDom.getElementById("icon-tuding-full").style.display = "block";
     shadowDom.getElementById("icon-tuding-fix").style.display = "none";
     document.documentElement.removeEventListener("mousedown", clickListener);
 }
@@ -671,8 +715,15 @@ function fixOff() {
         fixSetting: false
     });
     shadowDom.getElementById("icon-tuding-full").style.display = "none";
-    shadowDom.getElementById("icon-tuding-fix").style.display = "inline";
+    shadowDom.getElementById("icon-tuding-fix").style.display = "block";
     document.documentElement.addEventListener("mousedown", clickListener);
+}
+
+/**
+ * Open options page.
+ */
+function openOptionsPage() {
+    Messager.send("background", "open_options_page", {});
 }
 
 /**
@@ -737,14 +788,48 @@ function copyContent() {
 }
 
 /**
+ * Edit original test.
+ */
+function editOriginalText() {
+    let originalTextEle = resultPanel
+        .getElementsByClassName("original-text")[0]
+        .getElementsByTagName("p")[0];
+
+    // Allow editing.
+    originalTextEle.setAttribute("contenteditable", "true");
+    originalTextEle.focus();
+
+    shadowDom.getElementById("icon-edit").style.display = "none";
+    shadowDom.getElementById("icon-edit-done").style.display = "block";
+}
+
+/**
+ * Submit and translate edited text.
+ */
+function submitEditedText() {
+    let originalTextEle = resultPanel
+        .getElementsByClassName("original-text")[0]
+        .getElementsByTagName("p")[0];
+
+    // Prevent editing.
+    originalTextEle.setAttribute("contenteditable", "false");
+
+    // Do translating.
+    Messager.send("background", "translate", { text: originalTextEle.textContent });
+
+    shadowDom.getElementById("icon-edit").style.display = "block";
+    shadowDom.getElementById("icon-edit-done").style.display = "none";
+}
+
+/**
  * Set up translator options.
  *
- * @param {Object} config translator config
+ * @param {String} selectedTranslator selected translator
  * @param {Array<String>} availableTranslators available translators for current language setting
  *
  * @returns {void} nothing
  */
-function setUpTranslateConfig(config, availableTranslators) {
+function setUpTranslateConfig(selectedTranslator, availableTranslators) {
     let translatorsEle = shadowDom.getElementById("translators");
 
     // Remove existed options.
@@ -752,23 +837,9 @@ function setUpTranslateConfig(config, availableTranslators) {
         translatorsEle.options.remove(i - 1);
     }
 
-    // data-affected indicates items affected by this element in config.selections, they always have the same value.
-    let selected = config.single;
-
-    // Add hybrid translator alone.
-    if (selected === "HybridTranslate") {
-        translatorsEle.options.add(
-            new Option(chrome.i18n.getMessage("HybridTranslate"), "HybridTranslate", true, true)
-        );
-    } else {
-        translatorsEle.options.add(
-            new Option(chrome.i18n.getMessage("HybridTranslate"), "HybridTranslate")
-        );
-    }
-
-    // Add normal translators.
+    // Add translator options.
     for (let translator of availableTranslators) {
-        if (translator === selected) {
+        if (translator === selectedTranslator) {
             translatorsEle.options.add(
                 new Option(chrome.i18n.getMessage(translator), translator, true, true)
             );
@@ -779,15 +850,10 @@ function setUpTranslateConfig(config, availableTranslators) {
 
     // Update and re-translate.
     translatorsEle.onchange = () => {
-        let value = translatorsEle.options[translatorsEle.selectedIndex].value;
-        chrome.storage.sync.get("languageSetting", result => {
-            Messager.send("background", "update_translator", {
-                translator: value,
-                from: result.languageSetting.sl,
-                to: result.languageSetting.tl
-            }).then(() => {
-                Messager.send("background", "translate", { text: translateResult.originalText });
-            });
+        Messager.send("background", "update_default_translator", {
+            translator: translatorsEle.options[translatorsEle.selectedIndex].value
+        }).then(() => {
+            Messager.send("background", "translate", { text: translateResult.originalText });
         });
     };
 }

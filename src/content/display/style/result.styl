@@ -3,167 +3,198 @@
 /**
  * start content style
  */
-.translate {		
-	box-sizing: border-box;
-	padding: 5% 10%;
-	font-weight: medium;
-	font-size: medium;
-    position: relative;		
-	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
+#edge-translate-result {
+    box-sizing: border-box;
+    padding: 5% 10%;
+    font-weight: medium;
+    font-size: medium;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
 
-	.content-title { // 标题样式
-		color: gray;
-		font-size: larger;
-	}
+    .content-title { // 标题样式
+        color: gray;
+        font-size: larger;
+    }
 
-	ul, .list li {
-		list-style-type: none;
-	}
+    ul, .list li {
+        list-style-type: none;
+    }
 
-	.main-meaning {
-		width: 100%;		
-		padding: 0;
-		margin: 0;
-		display: flex;
-		flex-direction: row;
-		justify-content: space-between;
-		justify-items: flex-end;
+    .main-meaning {
+        width: 100%;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        justify-items: flex-end;
 
-		p{
-			flex-grow: 3;
-			flex-shrink: 1;
-			padding: 0;
-			margin: 0;
-		}
+        p{
+            flex-grow: 3;
+            flex-shrink: 1;
+            padding: 0;
+            margin: 0;
+        }
 
-		.icon-copy {												
-			font-size: x-large;
-			fill: lightgray;
-			display: flex;
-			flex-direction: column;
-			justify-content: center;	
+        #icon-copy {
+            font-size: x-large;
+            fill: lightgray;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
 
-			&:hover{
-				fill: gray;
-			}		   
-		}
+            &:hover{
+                fill: gray;
+            }
+        }
 
-		.main-meaning-content-larger {
-			font-size: 30px;
-			margin-bottom: 1%;
-		}
+        .main-meaning-content-larger {
+            font-size: 30px;
+            margin-bottom: 1%;
+        }
 
-		.main-meaning-content-large {
-			font-size: large;
-			margin-bottom: 1%;
-		}
+        .main-meaning-content-large {
+            font-size: large;
+            margin-bottom: 1%;
+        }
 
-		.main-meaning-content-small {
-			font-size: medium;
-			margin-bottom: 1%;
-		}
+        .main-meaning-content-small {
+            font-size: medium;
+            margin-bottom: 1%;
+        }
 
-		.main-meaning-content-smaller {
-			font-size: small;
-			margin-bottom: 1%;
-		}
-	}
+        .main-meaning-content-smaller {
+            font-size: small;
+            margin-bottom: 1%;
+        }
+    }
 
-	.target-phonetic-symbol {
-		width: 100%;
+    .original-text {
+        color: gray;
+        font-weight: lighter;
 
-		.target-phonetic-symbol-large {
-			font-size: large;
-			margin-top: 1%;
-		}
+        #icon-edit {
+            font-size: x-large;
+            fill: lightgray;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
 
-		.target-phonetic-symbol-medium {
-			font-size: medium;
-			margin-top: 1%;
-		}
+            &:hover{
+                fill: gray;
+            }
+        }
 
-		.target-phonetic-symbol-small {
-			font-size: small;
-			margin-top: 1%;
-		}
-	}
+        #icon-edit-done {
+            font-size: x-large;
+            fill: lightgray;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
 
-	.pronounce{
-		width: 100%;	
+            &:hover{
+                fill: gray;
+            }
+        }
 
-		.pronounce-item{
-			padding: 0;
-			display: flex;
-			justify-content: flex-start;
-			justify-items: center;					
-		}
+        @extend #edge-translate-result .main-meaning;
+    }
 
-		.icon-pronounce{						
-			padding: 0;
-			svg {				
-				fill: light-primary !important; 
+    .target-phonetic-symbol {
+        width: 100%;
 
-				&:hover{				
-					fill: orange !important;
-				}		
-			}			
-		}		
-	}
+        .target-phonetic-symbol-large {
+            font-size: large;
+            margin-top: 1%;
+        }
 
-	.phonetic-symbol {		
+        .target-phonetic-symbol-medium {
+            font-size: medium;
+            margin-top: 1%;
+        }
 
-		.phonetic-symbol-content {			
-			font-weight: lighter;
-			margin-left: 12%;
-		}
-	}
+        .target-phonetic-symbol-small {
+            font-size: small;
+            margin-top: 1%;
+        }
+    }
 
-	.common-meanings {
-		.common-meanings-content {
-			@extend .translate .phonetic-symbol .phonetic-symbol-content;
-		}
-	}
+    .pronounce{
+        width: 100%;
 
-	.detailed-meanings {
-		.word-type {
-			color: gray;
-			margin-left: 10%;
-		}
+        .pronounce-item{
+            padding: 0;
+            display: flex;
+            justify-content: flex-start;
+            justify-items: center;
+        }
 
-		.content {
-			display: block;
-			margin-left: 15%;
-			font-weight: light;
-		}
-	}
+        .icon-pronounce{
+            padding: 0;
+            svg {
+                fill: light-primary !important;
 
-	.definitions {
-		@extend .translate .detailed-meanings;
+                &:hover{
+                    fill: orange !important;
+                }
+            }
+        }
+    }
 
-		.definitions-content {
-			display: block;
-			margin-left: 5%;
-			font-weight: light;
-		}
-	}
+    .phonetic-symbol {
 
-	.synonyms {
-		@extend .translate .detailed-meanings;
-	}
+        .phonetic-symbol-content {
+            font-weight: lighter;
+            margin-left: 12%;
+        }
+    }
 
-	.phrases {
-		.phrases {
-			@extend .translate .phonetic-symbol .phonetic-symbol-content;
-		}
-	}
+    .common-meanings {
+        .common-meanings-content {
+            @extend #edge-translate-result .phonetic-symbol .phonetic-symbol-content;
+        }
+    }
 
-	.examples {
-		.sentences {
-			font-weight: light;
-		}
-	}
+    .detailed-meanings {
+        .word-type {
+            color: gray;
+            margin-left: 10%;
+        }
+
+        .content {
+            display: block;
+            margin-left: 15%;
+            font-weight: light;
+        }
+    }
+
+    .definitions {
+        @extend #edge-translate-result .detailed-meanings;
+
+        .definitions-content {
+            display: block;
+            margin-left: 5%;
+            font-weight: light;
+        }
+    }
+
+    .synonyms {
+        @extend #edge-translate-result .detailed-meanings;
+    }
+
+    .phrases {
+        .phrases {
+            @extend #edge-translate-result .phonetic-symbol .phonetic-symbol-content;
+        }
+    }
+
+    .examples {
+        .sentences {
+            font-weight: light;
+        }
+    }
 }
 
 /**

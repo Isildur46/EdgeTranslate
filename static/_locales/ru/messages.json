@@ -19,6 +19,10 @@
         "message": "Зафиксировать рамку результата",
         "description": "Фиксация рамки результата перевода."
     },
+    "UnfixResultFrame": {
+        "message": "Unfix the result frame",
+        "description": "Unfix the translating result frame."
+    },
     "CloseResultFrame": {
         "message": "Закрыть рамку результата",
         "description": "Закрывать рамку результатов перевода."
@@ -82,6 +86,14 @@
     "PronounceTranslated": {
         "message": "Читать переведённый текст",
         "description": "Читать переведённый текст."
+    },
+    "EditText": {
+        "message": "Edit text",
+        "description": "Edit selected text."
+    },
+    "Retranslate": {
+        "message": "Re-translate",
+        "description": "Re-translate the edited text."
     },
     "CopyResult": {
         "message": "Скопировать результат",
@@ -255,8 +267,8 @@
         "message": "Развернуть настройки языка",
         "description": "Развернуть параметры настройки языка"
     },
-    "TranslatorConfig": {
-        "message": "Translator Config",
+    "HybridTranslatorConfig": {
+        "message": "Hybrid Translator Config",
         "description": "Config providers for each part of the translation."
     },
     "MainTranslator": {
@@ -299,17 +311,17 @@
         "message": "Ошибка сети! Проверьте ваше сетевое соединение.",
         "description": "Сообщение об ошибке сети."
     },
-    "NETERR_CODE": {
-        "message": "Код ошибки",
-        "description": "Код ошибки сети."
+    "APIERR": {
+        "message": "Request parameters error. Please try using other translators or wait a moment and retry. If translating is still broken, please contact developers.",
+        "description": "API parameters error."
     },
-    "NETERR_503": {
-        "message": "Слишком много запросов! Google временно заблокировал ваш IP-адрес. Повторите попытку через 30 минут.",
-        "description": "Сообщение об ошибке сети для кода ошибки 503."
+    "ERR_CODE": {
+        "message": "Error code",
+        "description": "Error code."
     },
-    "NETERR_413": {
-        "message": "Текст перевода слишком длинный! Сократите текст перевода и попробуйте еще раз.",
-        "description": "Сообщение об ошибке сети для кода ошибки 413."
+    "ERR_MSG": {
+        "message": "Error message",
+        "description": "Error message."
     },
     "English": {
         "message": "English",
@@ -1090,6 +1102,10 @@
     "Twi": {
         "message": "Twi",
         "description": "Twi"
+    },
+    "Uyghur": {
+        "message": "Uyghur",
+        "description": "Uyghur"
     },
     "Ukrainian": {
         "message": "Ukrainian",
